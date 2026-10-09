@@ -3,7 +3,7 @@
 <script src="lib/mp4-muxer.js"></script>
 <style>body{margin:0;background:#111;color:#ddd;font:14px sans-serif}canvas{width:100%;max-width:1280px;display:block}</style></head>
 <body><canvas id="c" width="1920" height="1080"></canvas><div id="status"></div>
-<script src="core.js?v=8"></script><script src="world.js?v=8"></script><script src="spr.js?v=8"></script><script src="build.js?v=8"></script><script src="agents.js?v=8"></script><script src="show.js?v=8"></script>
+<script src="core.js?v=10"></script><script src="world.js?v=10"></script><script src="spr.js?v=10"></script><script src="build.js?v=10"></script><script src="agents.js?v=10"></script><script src="show.js?v=10"></script>
 <script>
 const main = document.getElementById('c'), mg = main.getContext('2d');
 const c2 = document.createElement('canvas'); c2.width = W; c2.height = H; const g2 = c2.getContext('2d');
@@ -18,6 +18,7 @@ function renderFrame(t) {
     const H0 = HOOKCAM(), today = Object.assign({}, S0, { year: 2025, night: 1, flood: -1 }), old = Object.assign({}, S0, { year: 1947.62, night: 0.25, flood: -1 });
     renderWorld(g2, today, t); renderWorld(mg, old, t); const x = Math.round(W * S0.wipe); if (x > 0) { mg.save(); mg.beginPath(); mg.rect(0, 0, x, H); mg.clip(); mg.drawImage(c2, 0, 0); mg.restore(); if (x < W) { mg.fillStyle = 'rgba(255,230,160,0.9)'; mg.fillRect(x - 3, 0, 6, H); } }
   } else renderWorld(mg, S0, t);
+  mg.filter = 'saturate(1.3) contrast(1.04)'; mg.drawImage(main, 0, 0); mg.filter = 'none';
   drawHUD(mg, S0); return S0;
 }
 window.renderFrame = renderFrame;
