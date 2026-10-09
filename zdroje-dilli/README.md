@@ -21,7 +21,7 @@ Overpass API (OSM) byl v cloudovém prostředí nedostupný, proto:
 * Až bude Overpass dostupný, lze spustit `fetch_osm.py` (uloží do `raw/`) a napsat k němu `prep` jako u Budapešti; `core.js` má vypnuté dolévání vody z DEM (`const added = 0`), protože Jamuna je polygon.
 
 ## Co je odhad / co ověřit před zveřejněním
-* Populace před rokem 1951 jsou odhady (`~`), sčítání lidu 1881–1951 jsou interpolovaná mezi censy; 2025 ≈ 22 mil. je odhad.
+* Populace: jen málo opěrných bodů (před 1881 hrubé odhady: ~20 tis. 1200, ~100 tis. 1300, ~400 tis. 1650–1700, ~140 tis. 1800; 1881–2011 sčítání lidu; 2025 ≈ 22 mil. odhad) a mezi nimi **lineární** nárůst. Žádné vymyšlené propady (Daulatábád, Timur) – ověřit/zpřesnit podle zdrojů.
 * Roky mostů: Old Yamuna Bridge 1866, ITO Bridge ~1965 a Nizamuddin Bridge ~1971 (**ověřit**), DND Flyway 2001.
 * Tradiční data: Lal Kot ~1060, Qila Rai Pithora ~1180, ~900 př. n. l. Painted Grey Ware (Purana Qila).
 * Půdorysy památek a hradeb jsou stylizované (polygony zadané ručně), orientace spritů je pevná.
