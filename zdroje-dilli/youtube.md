@@ -72,4 +72,4 @@ Data: výšky z AWS Terrain Tiles (Mapzen/Terrarium; mj. SRTM). Hudba a zvuky js
 - Roky mostů ITO (~1965) a Nizamuddin (~1971); „half a million“ uprchlíků v hooku (odhad).
 - Populace před 1881 (hrubé odhady), 2025 ≈ 22 mil. (odhad).
 - Řeka/mosty/silnice jsou syntetické (OSM nebylo k dispozici) – proto v popisu není © OpenStreetMap.
-- Hlasité efekty: viz `out/delhi-loud.json` (hook 0:00–0:02, Timur 1:49, Nadir Shah 3:05, 1857 3:29–3:37 dělostřelba a výbuch Kashmiri Gate ~3:35, přelety stíhaček 4:35 a 5:47).
+- Hlasité efekty: viz `out/delhi-loud.json` (hook 0:00–0:02, Timur 1:49, Nadir Shah 3:05, 1857 3:29–3:37 dělostřelba a výbuch Kashmiri Gate ~3:35, přelet 4:37, ohňostroj 5:29–5:34, finále se stíhačkami a ohňostrojem 5:48–5:54).
