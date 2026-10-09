@@ -1,26 +1,25 @@
 'use strict';
 // ================= BUILD: city generation, lifecycles, landmarks, walls =================
 let ITEMS = [], FIRES = [], NBLD = 0;
-const PEST = ll(47.4960, 19.0525), BUDA = ll(47.4985, 19.0385);
-const CORE = [(PEST[0] + BUDA[0]) / 2, (PEST[1] + BUDA[1]) / 2];
+const OLD = ll(28.6520, 77.2300), NEWD = ll(28.6150, 77.2150), CIVIL = ll(28.6800, 77.2250), SIRI = ll(28.5500, 77.2160), TUGH = ll(28.5110, 77.2660), FIROZ = ll(28.6358, 77.2406), PURANA = ll(28.6096, 77.2437), LALKOT = ll(28.5205, 77.1858);
+const CORE = OLD; // focal point of the city for agents / fx
 const dist2 = (e, n, c) => Math.hypot(e - c[0], n - c[1]);
 function styleFor(y, e, n, r, h) {
-  const dp = dist2(e, n, PEST), core = dp < 3600;
-  if (y < 430) return 1;
-  if (y < 1541) return 3;
-  if (y < 1686) return r < 0.7 ? 4 : 3;
-  if (y < 1860) return (core || y < 1800) ? 5 : (r < 0.5 ? 10 : 5);
-  if (y < 1914) return core ? (r < 0.8 ? 6 : 5) : (dp < 6000 ? (r < 0.5 ? 6 : 10) : (r < 0.7 ? 10 : 5));
-  if (y < 1945) return core ? (r < 0.65 ? 7 : 6) : (dp < 6500 ? (r < 0.5 ? 7 : 10) : 10);
-  if (y < 1990) return core ? (r < 0.5 ? 7 : r < 0.75 ? 8 : 6) : (r < 0.5 ? 8 : r < 0.75 ? 10 : 7);
-  return core ? (r < 0.4 ? 9 : r < 0.75 ? 7 : 6) : (r < 0.25 ? 9 : r < 0.6 ? 10 : 7);
+  const dold = dist2(e, n, OLD), dnew = dist2(e, n, NEWD), dciv = dist2(e, n, CIVIL), old = dold < 2700, nw = dnew < 5400 && y > 1911;
+  if (y < -300) return 0;
+  if (y < 1206) return 1;
+  if (y < 1526) return 3;
+  if (y < 1648) return r < 0.6 ? 4 : 3;
+  if (y < 1803) return old ? (r < 0.7 ? 5 : 4) : (r < 0.6 ? 4 : 3);
+  if (y < 1912) return old ? (r < 0.75 ? 5 : 4) : (dciv < 2300 ? (r < 0.5 ? 6 : 10) : (r < 0.6 ? 5 : 4));
+  if (y < 1947) return nw ? (r < 0.5 ? 10 : r < 0.8 ? 6 : 7) : old ? (r < 0.6 ? 5 : 7) : (r < 0.4 ? 7 : r < 0.7 ? 5 : 4);
+  if (y < 1990) return nw ? (r < 0.45 ? 10 : r < 0.75 ? 7 : 8) : old ? (r < 0.5 ? 5 : r < 0.8 ? 7 : 8) : (r < 0.35 ? 8 : r < 0.7 ? 7 : 10);
+  return nw ? (r < 0.3 ? 10 : r < 0.6 ? 9 : 7) : old ? (r < 0.4 ? 7 : r < 0.7 ? 5 : 9) : (r < 0.25 ? 9 : r < 0.6 ? 7 : 8);
 }
-const DESTR = [
-  { y: 1241, c: PEST, r: 900, frac: 0.95, delay: [8, 30], fire: 2 },
-  { y: 1526, c: BUDA, r: 1500, frac: 0.45, delay: [12, 30], fire: 1.5 },
-  { y: 1686, c: BUDA, r: 1700, frac: 0.92, delay: [10, 50], fire: 2.8 },
-  { y: 1838, c: PEST, r: 4200, frac: 0.86, delay: [2, 12], fire: 0, flood: 9.5 },
-  { y: 1944.9, c: CORE, r: 4600, frac: 0.55, delay: [3, 10], fire: 1.1 },
+const DESTR = [ // sacks and sieges: y, centre, radius, fraction destroyed, rebuild delay [min,max] (years), fire duration
+  { y: 1398.95, c: ll(28.5420, 77.2200), r: 3300, frac: 0.55, delay: [6, 30], fire: 2.2 },
+  { y: 1739.2, c: OLD, r: 2500, frac: 0.38, delay: [4, 25], fire: 1.7 },
+  { y: 1857.7, c: ll(28.6600, 77.2290), r: 2500, frac: 0.42, delay: [3, 14], fire: 1.5 },
 ];
 function genBuildings() {
   seedv = 4242; ITEMS = []; const items = ITEMS;
@@ -41,17 +40,17 @@ function genBuildings() {
       const h = hAt(e, n); if (h < 0.3) continue;
       const sl = Math.hypot(hAt(e + 12, n) - hAt(e - 12, n), hAt(e, n + 12) - hAt(e, n - 12)) / 24; if (sl > 0.5) continue;
       if (nearRoad(e, n, 14)) continue;
-      const r1 = rnd(), spread = U < 450 ? 10 : U < 1700 ? 40 : 28, y0 = U + 2 + rnd() * spread;
+      const r1 = rnd(), spread = (U > 1636 && U < 1662 && dist2(e, n, OLD) < 1800) || (U > 1911 && U < 1936 && dist2(e, n, NEWD) < 3800) ? 9 : U < 450 ? 10 : U < 1700 ? 40 : 28, y0 = U + 2 + rnd() * spread;
       if (y0 > 2024) continue;
       // density thinning near edges of growth & hills
-      if (h > 75 && rnd() < 0.5) continue; if (h > 55 && rnd() < 0.15) continue;
-      let sty = styleFor(y0, e, n, r1, h); if (h > 38 && y0 > 1860 && rnd() < 0.6) sty = 10;
+      if (h > 60 && rnd() < 0.5) continue; if (h > 45 && rnd() < 0.15) continue;
+      let sty = styleFor(y0, e, n, r1, h);
       const sc = 0.82 + rnd() * 0.42, vr = Math.floor(rnd() * 16);
       const seg = { e, n, h, y0, y1: 1e9, s: sty, v: vr, sc, k: 0, f: 0 };
-      // roman abandonment
-      if (sty === 1) { seg.y1 = 430 + rnd() * 70; items.push(seg); const re = rnd() < 0.55 ? 1150 + rnd() * 700 : 1e9; items.push({ e, n, h, y0: seg.y1, y1: re, s: 2, v: vr, sc: 1, k: 0, f: 0 }); if (re < 1e9) { const y2 = re, st2 = styleFor(y2, e, n, rnd(), h); items.push({ e, n, h, y0: y2, y1: 1e9, s: st2, v: vr, sc, k: 0, f: 0 }); } continue; }
-      // 19th century replacement of old houses in the Pest core
-      if (y0 < 1860 && sty !== 1) { const dp = dist2(e, n, PEST), dbu = dist2(e, n, BUDA), castle = dbu < 800 && h > 25; const rep = castle ? 0 : (dp < 3400 ? 0.85 : dbu < 2400 ? 0.4 : 0.2); if (rnd() < rep) { const yr = 1866 + rnd() * 44; seg.y1 = yr; items.push(seg); items.push({ e, n, h, y0: yr, y1: 1e9, s: styleFor(yr + 1, e, n, rnd(), h), v: vr, sc, k: 0, f: 0 }); continue; } }
+      // Siri / Tughlaqabad / Firozabad fade after the sack of 1398 and stay ruined until modern Delhi swallows them
+      { const dS = Math.min(dist2(e, n, SIRI), dist2(e, n, TUGH), dist2(e, n, FIROZ)); if (y0 < 1400 && dS < 1500 && rnd() < 0.8) { seg.y1 = 1398.9 + rnd() * 60; items.push(seg); const re = rnd() < 0.55 ? 1935 + rnd() * 40 : 1e9; items.push({ e, n, h, y0: seg.y1, y1: re, s: 2, v: vr, sc: 1, k: 0, f: 0 }); if (re < 1e9) items.push({ e, n, h, y0: re, y1: 1e9, s: styleFor(re, e, n, rnd(), h), v: vr, sc, k: 0, f: 0 }); continue; } }
+      // villages cleared for the Lutyens plan of New Delhi (1912-1931)
+      if (y0 < 1912 && dist2(e, n, NEWD) < 3000 && rnd() < 0.8) { const yr = 1912 + rnd() * 16; seg.y1 = yr; items.push(seg); items.push({ e, n, h, y0: yr, y1: 1e9, s: styleFor(yr + 1, e, n, rnd(), h), v: vr, sc, k: 0, f: 0 }); continue; }
       items.push(seg);
     }
   }
@@ -78,10 +77,10 @@ function genBuildings() {
   for (let e = BB[0] + 100; e < BB[2] - 100; e += TS) for (let n = BB[1] + 100; n < BB[3] - 100; n += TS) {
     const ee = e + (rnd() - 0.5) * TS, nn = n + (rnd() - 0.5) * TS; if (isWater(ee, nn)) continue; const h = hAt(ee, nn); if (h < 0.5) continue;
     const U = urbAt(ee, nn); const park = inPark(ee, nn);
-    const dens = park ? 0.55 : h > 42 ? 0.7 : h > 20 ? 0.18 : 0.04; if (rnd() > dens) continue;
+    const dens = park ? 0.55 : h > 30 ? 0.6 : h > 14 ? 0.16 : 0.05; if (rnd() > dens) continue;
     const sl = Math.hypot(hAt(ee + 12, nn) - hAt(ee - 12, nn), hAt(ee, nn + 12) - hAt(ee, nn - 12)) / 24; if (sl > 0.75) continue;
-    const y1 = park ? 1e9 : (U > 2100 ? 1e9 : U + 10 + rnd() * 25); if (!park && U < 2100 && h < 20) continue;
-    items.push({ e: ee, n: nn, h, y0: -9999, y1, s: h > 70 && rnd() < 0.55 ? 21 : 20, v: Math.floor(rnd() * 16), sc: 0.8 + rnd() * 0.6, k: 1, f: 0 });
+    const y1 = park ? 1e9 : (U > 2100 ? 1e9 : U + 10 + rnd() * 25); if (!park && U < 2100 && h < 14) continue;
+    items.push({ e: ee, n: nn, h, y0: -9999, y1, s: 20, v: Math.floor(rnd() * 16), sc: 0.8 + rnd() * 0.6, k: 1, f: 0 });
   }
   // landmarks
   addLandmarks(items);
@@ -90,53 +89,45 @@ function genBuildings() {
   return items.length;
 }
 function peakNear(c, r) { let best = -1, be = c[0], bn = c[1]; for (let e = c[0] - r; e <= c[0] + r; e += 12) for (let n = c[1] - r; n <= c[1] + r; n += 12) { const h = hAt(e, n); if (h > best) { best = h; be = e; bn = n; } } return [be, bn, best]; }
-let GELLERT, CASTLEHILL;
 function lmk(items, name, lat, lon, y0, y1, sc = 1, extra = {}) { const [e, n] = Array.isArray(lat) ? lat : ll(lat, lon); items.push(Object.assign({ e, n, h: hAt(e, n), y0, y1, s: 100, lm: name, v: 0, sc, k: 2, f: 0 }, extra)); }
 function addLandmarks(items) {
-  GELLERT = peakNear(ll(47.4862, 19.0452), 350);
-  // Celtic oppidum: huts on Gellért Hill
-  for (let i = 0; i < 26; i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * 150, e = GELLERT[0] + Math.cos(a) * r, n = GELLERT[1] + Math.sin(a) * r * 0.8; if (hAt(e, n) < GELLERT[2] * 0.55) { i--; if (rnd() < 0.2) i++; continue; } items.push({ e, n, h: hAt(e, n), y0: -85 + rnd() * 25, y1: 98 + rnd() * 10, s: 0, v: i, sc: 0.9 + rnd() * 0.4, k: 0, f: 0 }); }
-  // Hungarian tents (896) near Pest
-  { const pc = ll(47.4965, 19.0520); for (let i = 0; i < 44; i++) { const e = pc[0] + (rnd() - 0.5) * 1100, n = pc[1] + (rnd() - 0.5) * 900; if (isWater(e, n) || hAt(e, n) < 0.5) { i--; continue; } items.push({ e, n, h: hAt(e, n), y0: 896 + rnd() * 10, y1: 1060, s: 22, v: i + 3, sc: 1.5, k: 0, f: 0 }); } }
-  // Roman amphitheatres (approximate)
-  lmk(items, 'amph', 47.5445, 19.0478, 140, 430, 1.0); lmk(items, 'amph', 47.5497, 19.0436, 160, 430, 0.9);
-  // Roman Contra-Aquincum fort small hall; Buda castle & palace
-  CASTLEHILL = ll(47.4961, 19.0399);
-  lmk(items, 'castle', CASTLEHILL, 0, 1255, 1686, 1.0); lmk(items, 'church', 47.5019, 19.0343, 1260, 1e9, 1.0);
-  lmk(items, 'palace', CASTLEHILL, 0, 1749, 1944.9, 1.0); lmk(items, 'palace', CASTLEHILL, 0, 1961, 1e9, 1.0, { rb: 1 });
-  lmk(items, 'citadel', 47.4864, 19.0460, 1854, 1e9, 1.0);
-  lmk(items, 'bath', 47.4893, 19.0471, 1572, 1e9, 1.0); lmk(items, 'bath', 47.5069, 19.0361, 1578, 1e9, 0.9);
-  for (const [la, lo] of [[47.4950, 19.0365], [47.5010, 19.0330], [47.4975, 19.0545], [47.4930, 19.0555], [47.5035, 19.0390]]) lmk(items, 'minaret', la, lo, 1543, 1700 + hash2(la * 1e4 | 0, lo * 1e4 | 0, 2) * 20, 1.0);
-  lmk(items, 'parliament', 47.5071, 19.0446, 1896, 1e9, 1.0); lmk(items, 'opera', 47.5025, 19.0580, 1884, 1e9, 1.0); lmk(items, 'basilica', 47.5009, 19.0537, 1905, 1e9, 1.0);
-  // Chain Bridge towers
-  const cb = BRIDGES.find(b => b.name === 'Széchenyi lánchíd'); if (cb) { const [a, b] = [cb.pts[0], cb.pts[cb.pts.length - 1]]; for (const t of [0.14, 0.86]) lmk(items, 'bridge_tower', [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], 0, 1849, 1e9, 1.0, { h: 0, destroyYear: 1944.9, rebuildYear: 1949.6 }); }
+  // Painted Grey Ware huts on the Purana Qila mound
+  for (let i = 0; i < 18; i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * 170, e = PURANA[0] + Math.cos(a) * r, n = PURANA[1] + Math.sin(a) * r * 0.8; if (isWater(e, n) || hAt(e, n) < 0.5) { i--; continue; } items.push({ e, n, h: hAt(e, n), y0: -900 + rnd() * 20, y1: 1e9, s: 0, v: i, sc: 0.9 + rnd() * 0.4, k: 0, f: 0 }); }
+  // Timur's camp across the Yamuna (1398) and the Delhi Durbar tent city (1911)
+  { const tc = ll(28.6420, 77.2760); for (let i = 0; i < 40; i++) { const e = tc[0] + (rnd() - 0.5) * 1500, n = tc[1] + (rnd() - 0.5) * 1100; if (isWater(e, n) || hAt(e, n) < 0.3) { i--; continue; } items.push({ e, n, h: hAt(e, n), y0: 1398.6 + rnd() * 0.2, y1: 1399.3, s: 22, v: i, sc: 1.6, k: 0, f: 0 }); } }
+  { const dc = ll(28.6800, 77.2170); for (let i = 0; i < 70; i++) { const e = dc[0] + (rnd() - 0.5) * 2200, n = dc[1] + (rnd() - 0.5) * 1500; if (isWater(e, n) || hAt(e, n) < 0.3 || inPark(e, n)) { i--; continue; } items.push({ e, n, h: hAt(e, n), y0: 1911.5 + rnd() * 0.2, y1: 1912.4, s: 22, v: i, sc: 1.7, k: 0, f: 0 }); } }
+  // Qutb complex
+  lmk(items, 'qutb', 28.5245, 77.1855, 1200, 1e9, 1.5); lmk(items, 'mosque', 28.5252, 77.1845, 1193, 1e9, 1.1);
+  lmk(items, 'tomb2', 28.5105, 77.2640, 1325, 1e9, 1.0); lmk(items, 'tomb2', 28.5494, 77.1935, 1352, 1e9, 1.2);
+  lmk(items, 'pillar', 28.6358, 77.2406, 1356, 1e9, 1.4);
+  lmk(items, 'tomb2', 28.5925, 77.2205, 1517, 1e9, 1.1); lmk(items, 'tomb2', 28.5930, 77.2232, 1494, 1e9, 1.3);
+  lmk(items, 'mosque', 28.6100, 77.2440, 1541, 1e9, 1.1);
+  lmk(items, 'tomb', 28.5933, 77.2507, 1572, 1e9, 1.0);
+  lmk(items, 'pavilion', 28.6565, 77.2402, 1648, 1e9, 1.0); lmk(items, 'pavilion', 28.6540, 77.2425, 1648, 1e9, 0.9);
+  lmk(items, 'jama', 28.6507, 77.2334, 1656, 1e9, 1.0);
+  lmk(items, 'jantar', 28.6271, 77.2166, 1724, 1e9, 1.0);
+  lmk(items, 'tomb2', 28.5893, 77.2108, 1754, 1e9, 2.0);
+  lmk(items, 'rbhavan', 28.6143, 77.1995, 1929, 1e9, 1.0); lmk(items, 'secr', 28.6180, 77.2058, 1927, 1e9, 1.0); lmk(items, 'secr', 28.6106, 77.2058, 1927, 1e9, 1.0); lmk(items, 'sansad', 28.6173, 77.2092, 1927, 1e9, 1.0);
+  lmk(items, 'indiagate', 28.6129, 77.2295, 1931, 1e9, 1.0); lmk(items, 'cp', 28.6315, 77.2167, 1933, 1e9, 1.0);
+  lmk(items, 'lotus', 28.5535, 77.2588, 1986, 1e9, 1.0); lmk(items, 'akshardham', 28.6127, 77.2773, 2005, 1e9, 1.0);
 }
-// ---- wall segments (Roman fort, Pest wall, castle-hill walls, palisade)
+// ---- wall segments (the seven historic cities, Purana Qila, Red Fort, Shahjahanabad)
 let WALLS = [];
-function contour(cx, cy, half, level, step = 14) {
-  const out = [], nx = Math.floor(2 * half / step); const g = []; for (let j = 0; j <= nx; j++) { g.push([]); for (let i = 0; i <= nx; i++) g[j].push(hAt(cx - half + i * step, cy - half + j * step)); }
-  for (let j = 0; j < nx; j++) for (let i = 0; i < nx; i++) {
-    const v = [g[j][i], g[j][i + 1], g[j + 1][i + 1], g[j + 1][i]], px = [[0, 0], [1, 0], [1, 1], [0, 1]], pts = [];
-    for (let q = 0; q < 4; q++) { const a = v[q], b = v[(q + 1) % 4]; if ((a < level) !== (b < level)) { const t = (level - a) / (b - a), pa = px[q], pb = px[(q + 1) % 4]; pts.push([cx - half + (i + pa[0] + (pb[0] - pa[0]) * t) * step, cy - half + (j + pa[1] + (pb[1] - pa[1]) * t) * step]); } }
-    if (pts.length >= 2) out.push([pts[0], pts[1]]); if (pts.length === 4) out.push([pts[2], pts[3]]);
-  }
-  return out;
-}
 function addWalls() {
   WALLS = [];
   const add = (a, b, y0, y1, ht, col, tw) => WALLS.push({ a, b, y0, y1, ht, col, tw: tw || 0 });
-  // Roman castra (legionary fortress, Óbuda) – rotated rectangle with towers
-  const c = ll(47.5395, 19.0415), rot = 0.33, hw = 225, hl = 270, R = (u, v) => [c[0] + u * Math.cos(rot) + v * Math.sin(rot), c[1] - u * Math.sin(rot) + v * Math.cos(rot)];
-  const cs = [R(-hw, -hl), R(hw, -hl), R(hw, hl), R(-hw, hl)];
-  for (let i = 0; i < 4; i++) { const a = cs[i], b = cs[(i + 1) % 4], m = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 30)); for (let q = 0; q < m; q++) add([a[0] + (b[0] - a[0]) * q / m, a[1] + (b[1] - a[1]) * q / m], [a[0] + (b[0] - a[0]) * (q + 1) / m, a[1] + (b[1] - a[1]) * (q + 1) / m], 89 + (i + q * 0.02) * 1.5, 440, 12, [196, 170, 130], q % 6 === 0); }
-  // Pest town wall (stylised along today's Small Boulevard)
-  const pw = [[47.4868, 19.0535], [47.4874, 19.0577], [47.4916, 19.0611], [47.4948, 19.0616], [47.4975, 19.0560], [47.4985, 19.0495], [47.4996, 19.0462]].map(p => ll(p[0], p[1]));
-  for (let i = 0; i + 1 < pw.length; i++) { const a = pw[i], b = pw[i + 1], m = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 28)); for (let q = 0; q < m; q++) add([a[0] + (b[0] - a[0]) * q / m, a[1] + (b[1] - a[1]) * q / m], [a[0] + (b[0] - a[0]) * (q + 1) / m, a[1] + (b[1] - a[1]) * (q + 1) / m], 1250 + (q % 3) * 6, 1790 + hash2(i, q, 5) * 60, 8, [196, 184, 160], q % 4 === 0); }
-  // Buda castle-hill walls from terrain contour
-  const ch = peakNear(CASTLEHILL, 200), lv = ch[2] * 0.72, seg = contour(CASTLEHILL[0], CASTLEHILL[1] + 20, 620, lv, 16);
-  seg.forEach(([a, b], i) => { if (Math.hypot(a[0] - CASTLEHILL[0], a[1] - CASTLEHILL[1]) < 560) add(a, b, 1255 + (i % 7) * 4, 1850 + (i % 9) * 8, 8, [196, 182, 156], i % 5 === 0); });
-  // Celtic palisade on Gellért Hill
-  const gl = GELLERT[2] * 0.66, seg2 = contour(GELLERT[0], GELLERT[1], 380, gl, 14); seg2.forEach(([a, b], i) => add(a, b, -80, 100, 3.2, [150, 112, 70], 0));
+  const ring = (llpts, closed, y0, y1, ht, col, o = {}) => { const pts = llpts.map(p => ll(p[0], p[1])); if (closed) pts.push(pts[0]); const tot = pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0); let acc = 0; for (let i = 0; i + 1 < pts.length; i++) { const a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), m = Math.max(1, Math.round(L / (o.step || 28))); for (let q = 0; q < m; q++) { const u = (acc + L * q / m) / tot, yy = y0 + (o.span || 4) * u, y1b = typeof y1 === 'function' ? y1(i, q) : y1; add([a[0] + (b[0] - a[0]) * q / m, a[1] + (b[1] - a[1]) * q / m], [a[0] + (b[0] - a[0]) * (q + 1) / m, a[1] + (b[1] - a[1]) * (q + 1) / m], yy, y1b, ht, col, (o.tw || 6) && q % (o.tw || 6) === 0); } acc += L; } };
+  const oval = (lat, lon, ra, rb, n = 22) => Array.from({ length: n }, (_, i) => { const a = i / n * 6.283, c = ll(lat, lon); return [lat + Math.sin(a) * rb / 110574, lon + Math.cos(a) * ra / (111320 * Math.cos(lat * D2R))]; });
+  ring([[28.5225, 77.1790], [28.5225, 77.1900], [28.5150, 77.1900], [28.5150, 77.1790]], true, 1060, 1e9, 8, [182, 164, 132], { span: 20 });          // Lal Kot
+  ring([[28.5265, 77.1750], [28.5265, 77.1925], [28.5115, 77.1925], [28.5115, 77.1750]], true, 1180, 1e9, 10, [186, 166, 132], { span: 12, tw: 8 }); // Qila Rai Pithora
+  ring(oval(28.5500, 77.2160, 820, 760), true, 1303, 1e9, 11, [170, 150, 120], { span: 7, tw: 5 });                                                 // Siri
+  ring([[28.5130, 77.2570], [28.5130, 77.2700], [28.5035, 77.2720], [28.5025, 77.2590]], true, 1321, 1e9, 18, [146, 130, 110], { span: 6, tw: 4 });   // Tughlaqabad
+  ring([[28.5290, 77.1960], [28.5400, 77.1990], [28.5500, 77.2000]], false, 1326, 1e9, 8, [170, 154, 126], { span: 1, tw: 0 });                    // Jahanpanah
+  ring([[28.6390, 77.2395], [28.6390, 77.2425], [28.6340, 77.2425], [28.6340, 77.2395]], true, 1354, 1e9, 12, [186, 168, 138], { span: 3, tw: 4 });   // Firozabad (Kotla)
+  ring([[28.6140, 77.2428], [28.6140, 77.2465], [28.6055, 77.2465], [28.6055, 77.2428]], true, 1533, 1e9, 17, [176, 98, 72], { span: 12, tw: 5 });    // Purana Qila
+  ring([[28.6600, 77.2380], [28.6600, 77.2440], [28.6520, 77.2440], [28.6520, 77.2380]], true, 1639, 1e9, 20, [168, 62, 44], { span: 9, tw: 5 });     // Red Fort
+  const sw = [[28.6590, 77.2380], [28.6678, 77.2290], [28.6660, 77.2235], [28.6565, 77.2175], [28.6435, 77.2255], [28.6428, 77.2373], [28.6395, 77.2396], [28.6445, 77.2425], [28.6520, 77.2405]];
+  ring(sw, false, 1650, (i, q) => 1862 + 40 * hash2(i, q, 17) * (hash2(i, q, 3) < 0.35 ? 1 : 0) + (hash2(i, q, 3) < 0.35 ? 0 : 1e9), 9, [196, 172, 142], { span: 8, tw: 7 }); // Shahjahanabad wall (mostly demolished after 1857)
   for (const w of WALLS) { w.e = (w.a[0] + w.b[0]) / 2; w.n = (w.a[1] + w.b[1]) / 2; w.h = hAt(w.e, w.n); w.k = 3; w.s = 0; w.sc = 1; w.v = 0; w.f = 0; w.key = w.e - w.n; ITEMS.push(w); }
   ITEMS.sort((a, b) => a.key - b.key);
 }

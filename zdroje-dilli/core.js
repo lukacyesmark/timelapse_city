@@ -1,8 +1,9 @@
 'use strict';
 // ================= CORE: projection, data, terrain (WebGL2) =================
 const W = 1920, H = 1080, D2R = Math.PI / 180;
-const LAT0 = 47.50, LON0 = 19.04, KX = 111320 * Math.cos(LAT0 * D2R), KY = 110574;
+const LAT0 = 28.60, LON0 = 77.21, KX = 111320 * Math.cos(LAT0 * D2R), KY = 110574;
 const ll = (lat, lon) => [(lon - LON0) * KX, (lat - LAT0) * KY];
+const SAFFRON = '#ff9933', GREENIN = '#138808';
 const clamp = (v, a = 0, b = 1) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = t => { t = clamp(t); return t * t * (3 - 2 * t); };
@@ -60,25 +61,15 @@ async function loadData() {
       HM[j * GH + i] = (Z[k] * (1 - fx) + Z[k + 1] * fx) * (1 - fy) + (Z[k + MW] * (1 - fx) + Z[k + MW + 1] * fx) * fy;
     }
   }
-  // extend OSM water southwards using DEM (flat low river surface), flood fill + opening
-  const RAW = Float32Array.from(HM), G = GH, wat = new Uint8Array(G * G), vis = new Uint8Array(G * G);
-  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) wat[j * G + i] = WAT[Math.floor(j / (G - 1) * (WN - 1)) * WN + Math.floor(i / (G - 1) * (WN - 1))] > 127 ? 1 : 0;
-  const q = []; for (let k = 0; k < G * G; k++) if (wat[k]) { vis[k] = 2; q.push(k); }
-  for (let qi = 0; qi < q.length; qi++) { const k = q[qi], x = k % G, y = (k / G) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= G || yy >= G) continue; const kk = yy * G + xx; if (!vis[kk] && RAW[kk] < 96.7) { vis[kk] = 1; q.push(kk); } } }
-  const ext = new Uint8Array(G * G); for (let k = 0; k < G * G; k++) ext[k] = vis[k] === 1 ? 1 : 0;
-  const er = (a, r) => { const o = new Uint8Array(G * G); for (let y = r; y < G - r; y++) for (let x = r; x < G - r; x++) { let ok = 1; for (let dy = -r; dy <= r && ok; dy++) for (let dx = -r; dx <= r; dx++) if (!a[(y + dy) * G + x + dx]) { ok = 0; break; } o[y * G + x] = ok; } return o; };
-  const di = (a, r, lim) => { const o = new Uint8Array(G * G); for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) { if (!lim[y * G + x]) continue; let ok = 0; for (let dy = -r; dy <= r && !ok; dy++) for (let dx = -r; dx <= r; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < G && yy < G && a[yy * G + xx]) { ok = 1; break; } } o[y * G + x] = ok; } return o; };
-  const opened = di(er(ext, 3), 4, ext);
-  let added = 0; for (let j = 0; j < WN; j++) for (let i = 0; i < WN; i++) { const k = Math.floor(j / WN * G) * G + Math.floor(i / WN * G); if (opened[k] && WAT[j * WN + i] < 128) { WAT[j * WN + i] = 255; added++; } }
-  { const c3 = document.createElement('canvas'); c3.width = WN; c3.height = WN; const g3 = c3.getContext('2d'), id3 = g3.createImageData(WN, WN); for (let i = 0; i < WN * WN; i++) { id3.data[i * 4] = id3.data[i * 4 + 1] = id3.data[i * 4 + 2] = WAT[i]; id3.data[i * 4 + 3] = 255; } g3.putImageData(id3, 0, 0);
-    const c4 = document.createElement('canvas'); c4.width = WN; c4.height = WN; const g4 = c4.getContext('2d', { willReadFrequently: true }); g4.filter = 'blur(2.5px)'; g4.drawImage(c3, 0, 0); const d4 = g4.getImageData(0, 0, WN, WN).data; for (let i = 0; i < WN * WN; i++) { WATB[i * 4] = d4[i * 4]; WATB[i * 4 + 3] = 255; } }
+  // (Delhi: river is a stylised polygon, DEM flood-extension disabled)
+  const added = 0;
   window.WATADDED = added;
   { const c5 = document.createElement('canvas'); c5.width = WN; c5.height = WN; const g5 = c5.getContext('2d', { willReadFrequently: true }); g5.fillStyle = '#000'; g5.fillRect(0, 0, WN, WN); const c6 = document.createElement('canvas'); c6.width = WN; c6.height = WN; const g6 = c6.getContext('2d'), id6 = g6.createImageData(WN, WN); for (let i = 0; i < WN * WN; i++) { id6.data[i * 4] = id6.data[i * 4 + 1] = id6.data[i * 4 + 2] = WAT[i]; id6.data[i * 4 + 3] = 255; } g6.putImageData(id6, 0, 0); g5.filter = 'blur(45px)'; g5.drawImage(c6, 0, 0); const d5 = g5.getImageData(0, 0, WN, WN).data; WFAR = new Uint8Array(WN * WN * 4); for (let i = 0; i < WN * WN; i++) { WFAR[i * 4] = d5[i * 4]; WFAR[i * 4 + 3] = 255; } }
   // relative heights: river level = 0
-  const RIV = 95.5;
+  const rivAt = n => 193.6 + 7.0 * (n - BB[1]) / (BB[3] - BB[1]);
   for (let j = 0; j < GH; j++) for (let i = 0; i < GH; i++) {
     const wx = Math.floor(i / (GH - 1) * (WN - 1)), wy = Math.floor(j / (GH - 1) * (WN - 1));
-    HM[j * GH + i] = WAT[wy * WN + wx] > 127 ? 0 : Math.max(0.4, HM[j * GH + i] - RIV);
+    HM[j * GH + i] = WAT[wy * WN + wx] > 127 ? 0 : Math.max(0.4, HM[j * GH + i] - rivAt(BB[1] + j / (GH - 1) * (BB[3] - BB[1])));
   }
   // light smoothing (3x3) to remove DEM noise
   const T = new Float32Array(HM); for (let j = 1; j < GH - 1; j++) for (let i = 1; i < GH - 1; i++) { const k = j * GH + i; if (HM[k] === 0) continue; let s = 0, w = 0; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const v = HM[k + dj * GH + di]; if (v === 0) continue; s += v; w++; } T[k] = s / w; } HM = T;
@@ -92,14 +83,14 @@ function buildAlbedo() {
     const e = BB[0] + (x + 0.5) / A * ew, n = BB[1] + (y + 0.5) / A * nh, h = hAt(e, n);
     const hx = hAt(e + 25, n) - hAt(e - 25, n), hy = hAt(e, n + 25) - hAt(e, n - 25), sl = Math.hypot(hx, hy) / 50;
     const nz = fbm2(e / 90, n / 90, 3, 5), nz2 = fbm2(e / 600, n / 600, 2, 9);
-    let r = 96 + 26 * nz, gg = 142 + 14 * nz, b = 64 + 14 * nz;
+    let r = 128 + 24 * nz, gg = 138 + 14 * nz, b = 82 + 14 * nz;
     if (sl < 0.12 && h < 90) { // fields
       const zone = hash2(Math.floor(e / 2600), Math.floor(n / 2600), 11), ang = [0.25, 0.9, -0.45][Math.floor(zone * 3)], ca = Math.cos(ang), sa = Math.sin(ang), u = (e * ca + n * sa) / 170, v = (-e * sa + n * ca) / 260, cell = hash2(Math.floor(u), Math.floor(v), 3);
-      if (cell > 0.45 && nz2 > 0.42) { const p = hash2(Math.floor(u), Math.floor(v), 4); const cols = [[150, 158, 78], [184, 168, 92], [112, 148, 66], [140, 118, 72], [126, 154, 74]]; const q = cols[Math.floor(p * 5)]; const uf = ((u % 1) + 1) % 1, vf = ((v % 1) + 1) % 1; const fe = (uf < 0.06 || uf > 0.94 || vf < 0.05 || vf > 0.95) ? 0.82 : 1; const st = 0.96 + 0.06 * Math.sin(vf * 60); r = lerp(r, q[0], 0.8) * fe * st; gg = lerp(gg, q[1], 0.8) * fe * st; b = lerp(b, q[2], 0.8) * fe * st; }
+      if (cell > 0.45 && nz2 > 0.42) { const p = hash2(Math.floor(u), Math.floor(v), 4); const cols = [[170, 160, 84], [196, 172, 96], [128, 150, 68], [156, 126, 76], [140, 156, 76]]; const q = cols[Math.floor(p * 5)]; const uf = ((u % 1) + 1) % 1, vf = ((v % 1) + 1) % 1; const fe = (uf < 0.06 || uf > 0.94 || vf < 0.05 || vf > 0.95) ? 0.82 : 1; const st = 0.96 + 0.06 * Math.sin(vf * 60); r = lerp(r, q[0], 0.8) * fe * st; gg = lerp(gg, q[1], 0.8) * fe * st; b = lerp(b, q[2], 0.8) * fe * st; }
     }
-    if (h > 40 + 25 * nz2 && sl < 0.55) { const t = clamp((h - 40) / 40); r = lerp(r, 48 + 10 * nz, t * 0.75); gg = lerp(gg, 98 + 10 * nz, t * 0.75); b = lerp(b, 50, t * 0.75); }
+    if (h > 26 + 20 * nz2 && sl < 0.6) { const t = clamp((h - 26) / 30); r = lerp(r, 92 + 10 * nz, t * 0.7); gg = lerp(gg, 112 + 10 * nz, t * 0.7); b = lerp(b, 62, t * 0.7); }
     if (sl > 0.32) { const t = clamp((sl - 0.32) / 0.3); r = lerp(r, 134, t); gg = lerp(gg, 120, t); b = lerp(b, 98, t); }
-    const wi = (Math.floor(y / A * WN) * WN + Math.floor(x / A * WN)); const wb = WATB[wi * 4];
+    const wi = (Math.floor(y / A * WN) * WN + Math.floor(x / A * WN)); const wb = WATB[wi * 4]; { const wf = WFAR[wi * 4] / 255; if (wf > 0.22 && wb < 6) { const t = clamp((wf - 0.22) / 0.4) * 0.8; r = lerp(r, 104 + 20 * nz, t); gg = lerp(gg, 152 + 12 * nz, t); b = lerp(b, 64, t); } }
     if (wb > 6 && wb < 250) { r = lerp(r, 205, 0.7); gg = lerp(gg, 195, 0.7); b = lerp(b, 158, 0.7); }
     const k = (y * A + x) * 4; d[k] = r; d[k + 1] = gg; d[k + 2] = b; d[k + 3] = 255;
   }
@@ -149,7 +140,7 @@ void main(){
     float t = uTime * 0.6; vec2 p = vUV * vec2(520.0, 560.0);
     float w1 = vn(p + vec2(t, t * 0.7)), w2 = vn(p * 2.1 - vec2(t * 0.8, t));
     float shore = smoothstep(0.55, 0.98, wat);
-    vec3 deep = vec3(0.10, 0.28, 0.47), shal = vec3(0.27, 0.58, 0.68);
+    vec3 deep = vec3(0.14, 0.32, 0.36), shal = vec3(0.38, 0.56, 0.50);
     vec3 wc = mix(shal, deep, shore) * (0.86 + 0.28 * w1);
     float gl = smoothstep(0.78, 0.92, w2 * w1 + 0.15 * sin(p.x * 0.7 + t * 2.0));
     wc += vec3(0.20, 0.24, 0.26) * gl;

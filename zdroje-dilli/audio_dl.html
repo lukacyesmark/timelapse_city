@@ -1,11 +1,11 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Budapest audio</title>
-<script type="module">import * as MB from 'https://cdn.jsdelivr.net/npm/mediabunny@1.40.0/dist/bundles/mediabunny.min.mjs'; window.MB = MB;</script>
+<!doctype html><html><head><meta charset="utf-8"><title>Delhi audio</title>
+<script type="module">import * as MB from './lib/mediabunny.min.mjs'; window.MB = MB;</script>
 </head><body style="font:14px sans-serif;background:#111;color:#ddd"><div id="status">idle</div>
 <script>
 const SR = 44100, S = m => { document.getElementById('status').textContent = m; };
 const M2F = m => 440 * Math.pow(2, (m - 69) / 12);
 let sd = 777; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-const SCL = { dorian: [0, 2, 3, 5, 7, 9, 10], penta: [0, 2, 5, 7, 9], ionian: [0, 2, 4, 5, 7, 9, 11], hijaz: [0, 1, 4, 5, 7, 8, 10], hungm: [0, 2, 3, 6, 7, 8, 11], minor: [0, 2, 3, 5, 7, 8, 10], pent_m: [0, 3, 5, 7, 10] };
+const SCL = { yaman: [0, 2, 4, 6, 7, 9, 11], bhairav: [0, 1, 4, 5, 7, 8, 11], bhairavi: [0, 1, 3, 5, 7, 8, 10], bhupali: [0, 2, 4, 7, 9], dorian: [0, 2, 3, 5, 7, 9, 10], penta: [0, 2, 5, 7, 9], ionian: [0, 2, 4, 5, 7, 9, 11], hijaz: [0, 1, 4, 5, 7, 8, 10], hungm: [0, 2, 3, 6, 7, 8, 11], minor: [0, 2, 3, 5, 7, 8, 10], pent_m: [0, 3, 5, 7, 10] };
 const CH = { Dm: [50, 57, 62, 65], C: [48, 55, 60, 64], Bb: [46, 53, 58, 62], A: [45, 52, 57, 61], Gm: [43, 50, 55, 58], Am: [45, 52, 57, 60], D: [50, 57, 62, 66], A7: [45, 52, 57, 61, 67], F: [41, 48, 53, 57], Em: [52, 59, 64, 67], Edim: [52, 58, 62, 67], G: [43, 50, 55, 59] };
 const LOUD = [];
 
@@ -75,67 +75,72 @@ async function build(T) {
   const tankRoll = (t, len) => { const n = noiseSrc(t, len + 1), l = lp(130), g = ctx.createGain(), lf = ctx.createOscillator(), lg = ctx.createGain(), mg = ctx.createGain(); adsr(g, t, 1.2, len, 1.2, 0.3); mg.gain.value = 0.7; lf.frequency.value = 14; lg.gain.value = 0.3; lf.connect(lg); lg.connect(mg.gain); lf.start(t); lf.stop(t + len + 1); n.connect(l); l.connect(mg); mg.connect(g); g.connect(sfxMaster); for (let tt = t + 0.4; tt < t + len; tt += 0.55) { clink(tt); } };
   const birdsong = (t, len, amp) => { for (let tt = t; tt < t + len; tt += 0.9 + rnd() * 2.6) { const f = 3200 + rnd() * 1800, pan = (rnd() - 0.5) * 1.4; for (let i = 0; i < 2 + (rnd() * 3 | 0); i++) { const o = ctx.createOscillator(), g = ctx.createGain(), pn = panNode(pan, pan, tt, 0.3), t1 = tt + i * 0.11; o.frequency.setValueAtTime(f, t1); o.frequency.linearRampToValueAtTime(f * (1.2 + rnd() * 0.3), t1 + 0.06); g.gain.setValueAtTime(0.0001, t1); g.gain.linearRampToValueAtTime(amp, t1 + 0.012); g.gain.linearRampToValueAtTime(0.0001, t1 + 0.07); o.connect(g); g.connect(pn); o.start(t1); o.stop(t1 + 0.1); } } };
   // ---- constant under-pad (D drone), epoch buses with crossfades
-  const EP = [['intro', 0, 10], ['roman', 10, 55], ['migr', 55, 82], ['medi', 82, 137], ['ottoman', 137, 169], ['baroque', 169, 205], ['cimbal', 205, 238], ['golden', 238, 285], ['wars', 285, 294], ['siege', 294, 309], ['soc', 309, 338], ['modern', 338, T.total]];
+  const evAt = y => T.events.find(e => e.y === y), tS = y => evAt(y).t0, tE = y => evAt(y).t1;
+  const EP = [['intro', 0, 10], ['ancient', 10, tS(1206) - 1], ['sult', tS(1206) - 1, tS(1398) - 3], ['timur', tS(1398) - 3, tE(1398) + 2], ['mughal', tE(1398) + 2, tS(1739) - 1], ['nadir', tS(1739) - 1, tE(1739) + 1.5], ['comp', tE(1739) + 1.5, tS(1857)], ['reb', tS(1857), tE(1857) + 1], ['raj', tE(1857) + 1, tS(1947) - 0.5], ['indep', tS(1947) - 0.5, tE(1947) + 1], ['rep', tE(1947) + 1, tS(2002) - 1], ['modern', tS(2002) - 1, T.total]];
   const buses = {}; for (const [nm, a, b] of EP) { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, 0); const fa = Math.max(0, a - 1.4), fb = Math.min(T.total + 2, b + 1.4); g.gain.setValueAtTime(a < 1 ? 1 : 0.0001, fa); if (a >= 1) g.gain.linearRampToValueAtTime(1, a + 1.4); g.gain.setValueAtTime(1, Math.max(a + 1.4, b - 1.4)); g.gain.linearRampToValueAtTime(0.0001, fb); g.connect(musicMaster); buses[nm] = g; }
   const underBus = ctx.createGain(); underBus.gain.value = 0.55; underBus.connect(musicMaster);
   for (let t = 0; t < T.total; t += 22) padDrone(underBus, Math.max(0, t - 1), 22, [38, 45, 50, 57], 0.22, 600);
   // helpers for scheduling
   const walk = (scale, root, lo, hi, n, start = 0) => { const out = []; let i = start; const L = scale.length; for (let k = 0; k < n; k++) { const step = [0, 1, -1, 1, -1, 2, -2][Math.floor(rnd() * 7)]; i = Math.max(lo, Math.min(hi, i + step)); const oct = Math.floor(i / L); out.push(root + 12 * oct + scale[((i % L) + L) % L]); } return out; };
-  const evs = T.events; const evAt = y => evs.find(e => e.y === y);
+  const evs = T.events;
   // ---- intro
-  boom(0.12, 0.9, 3.4, 'intro boom'); rumble(0.1, 3.4, 0.5, 120); for (let k = 0; k < 4; k++) timp(buses.intro, 0.3 + k * 0.78, 0.35 + k * 0.08); boom(1.45, 0.75, 2.8, 'hook "Destroyed"'); timp(buses.intro, 1.45, 0.6);
+  boom(0.12, 0.9, 3.4, 'intro boom'); rumble(0.1, 3.4, 0.5, 120); for (let k = 0; k < 4; k++) timp(buses.intro, 0.3 + k * 0.78, 0.35 + k * 0.08); boom(1.45, 0.75, 2.8, 'hook "One summer"'); timp(buses.intro, 1.45, 0.6);
   { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(900, 3.6); o.frequency.exponentialRampToValueAtTime(70, 5.0); g.gain.setValueAtTime(0.0001, 3.6); g.gain.linearRampToValueAtTime(0.12, 3.8); g.gain.linearRampToValueAtTime(0.0001, 5.0); o.connect(g); g.connect(sfxMaster); o.start(3.6); o.stop(5.1); whoosh(3.6, 1.4, 0.18, false); for (let k = 0; k < 9; k++) tek(sfxMaster, 3.6 + k * 0.15, 0.05, 5000); }
   bell(buses.intro, 5.1, M2F(74), 0.2, 5); bell(buses.intro, 6.8, M2F(69), 0.16, 5); bell(buses.intro, 8.4, M2F(66), 0.16, 5); strings(buses.intro, 5.0, M2F(50), 6.5, 0.12, 1.8); strings(buses.intro, 5.0, M2F(57), 6.5, 0.1, 1.8);
-  // ---- epoch music
+  // ---- epoch music (timings come from the exported Delhi timeline)
   const bar = (bpm, beats = 4) => 60 / bpm * beats;
-  { const [, a, b] = EP[1], beat = 60 / 72; // roman
-    for (let t = a, i = 0; t < b; t += beat, i++) { frame(buses.roman, t, i % 4 === 0 ? 0.5 : i % 4 === 2 ? 0.3 : 0.12, 90); }
-    const notes = walk(SCL.dorian, 62, -3, 6, 120, 1); let ni = 0; for (let t = a + 1; t < b - 0.5; t += beat / 2) { if (rnd() < 0.35) continue; pluck(buses.roman, t, M2F(notes[ni++ % notes.length]), 1.1, 0.3, 'triangle', 6); }
-    padDrone(buses.roman, a, b - a, [38, 45, 50], 0.16, 500); }
-  { const [, a, b] = EP[2], beat = 60 / 84; // migration
-    for (let t = a, i = 0; t < b; t += beat * 2, i++) { for (const [k, am] of [[0, 0.55], [0.66, 0.3], [1.0, 0.4], [1.33, 0.3]]) frame(buses.migr, t + k * beat, am, 70); }
-    padDrone(buses.migr, a, b - a, [26, 38, 45, 50], 0.3, 380); const pn = walk(SCL.pent_m, 50, -2, 4, 30, 1); for (let t = a + 2, i = 0; t < b - 1; t += beat * 6, i++) strings(buses.migr, t, M2F(pn[i % pn.length]), beat * 4, 0.1, 0.8); }
-  { const [, a, b] = EP[3]; // medieval (to 1458 at ~126 -> brighter)
-    const prog = [CH.Dm, CH.C, CH.Bb, CH.A]; const bl = 8; let t = a, i = 0; while (t < b) { const ch = (t >= 126 ? [CH.D, CH.G, CH.Em, CH.A] : prog)[i % 4]; for (const m of ch.slice(0, 3)) choir(buses.medi, t, M2F(m), bl - 0.5, 0.07); bell(buses.medi, t + 0.1, M2F(ch[0] + 24), 0.1, 6); const sc = t >= 126 ? SCL.ionian : SCL.dorian; const nn = walk(sc, 62, -2, 5, 16, 2); for (let k = 0; k < 8; k++) pluck(buses.medi, t + k * bl / 8, M2F(ch[k % ch.length] + 12 * (k % 8 > 3 ? 1 : 0)), 1.6, 0.26, 'triangle', 5); if (t >= 126) for (let k = 0; k < 4; k++) flute(buses.medi, t + k * 2 + 0.2, M2F(nn[k] + 12), 1.6, 0.14); t += bl; i++; } }
-  { const [, a, b] = EP[4], beat = 60 / 96; // ottoman
-    const pat = [['d', 0], ['t', 1], ['t', 2], ['d', 3], ['t', 4]]; for (let t = a, bar8 = 0; t < b; t += beat * 4, bar8++) { for (const [ty, k] of [['d', 0], ['t', 1], ['t', 1.5], ['d', 2], ['t', 3]]) { if (ty === 'd') frame(buses.ottoman, t + k * beat, 0.36, 150); else tek(buses.ottoman, t + k * beat, 0.16, 3400); } }
-    const hi = SCL.hijaz; const nn = walk(hi, 62, -2, 7, 40, 3); let ni = 0; for (let t = a + 1; t < b - 2; t += beat * 4) { const L = beat * (rnd() < 0.5 ? 3 : 2); ney(buses.ottoman, t, M2F(nn[ni++ % nn.length]), L, 0.2); if (rnd() < 0.6) ney(buses.ottoman, t + L, M2F(nn[ni++ % nn.length]), beat * 1.5, 0.17); }
-    const on = walk(hi, 50, -1, 7, 80, 3); let oi = 0; for (let t = a; t < b; t += beat / 2) { if (rnd() < 0.3) continue; pluck(buses.ottoman, t, M2F(on[oi++ % on.length]), 0.9, 0.22, 'sawtooth', 4); }
-    padDrone(buses.ottoman, a, b - a, [38, 45, 50], 0.14, 400); }
-  { const [, a, b] = EP[5]; // baroque: siege 169-183 then harpsichord
-    for (let t = a + 0.6; t < 183; t += 1.25) timp(buses.baroque, t, 0.5); padDrone(buses.baroque, a, 14, [38, 41, 45], 0.28, 500); for (let t = a; t < 183; t += 2.5) brass(buses.baroque, t, M2F(38), 2.2, 0.14);
-    const prog = [CH.Dm, CH.Gm, CH.A, CH.Dm, CH.F, CH.C, CH.A, CH.D]; const beat = 60 / 100; let i = 0; for (let t = 183; t < b; t += beat * 4, i++) { const ch = prog[i % prog.length]; const arp = [0, 1, 2, 3, 2, 1, 2, 3]; for (let k = 0; k < 8; k++) harpsi(buses.baroque, t + k * beat / 2, M2F(ch[arp[k]] + 12), 0.25); organ(buses.baroque, t, M2F(ch[0]), beat * 4, 0.1); organ(buses.baroque, t, M2F(ch[2]), beat * 4, 0.07); } }
-  { const [, a, b] = EP[6]; // cimbalom 1848-1873
-    const beat = 60 / 118, prog = [CH.Dm, CH.A7, CH.Gm, CH.Dm, CH.Gm, CH.A7, CH.Dm, CH.A7]; const mel = walk(SCL.hungm, 62, -2, 7, 60, 3); let mi = 0, i = 0;
-    for (let t = a; t < b; t += beat * 4, i++) { const ch = prog[i % prog.length]; for (const m of ch.slice(0, 3)) strings(buses.cimbal, t, M2F(m), beat * 4, 0.1, 0.35); pluck(buses.cimbal, t, M2F(ch[0] - 12), 0.4, 0.3, 'sine', 3); pluck(buses.cimbal, t + beat * 2, M2F(ch[1] - 12), 0.4, 0.26, 'sine', 3); for (const k of [0, 1.5, 2, 3.5]) { const L = k === 0 || k === 2 ? beat * 1.2 : beat * 0.45; if (rnd() < 0.85) cimbalom(buses.cimbal, t + k * beat, M2F(mel[mi++ % mel.length]), L, 0.22); } }
+  { const [, a, b] = EP[1], beat = 1; // ancient / Rajput: tanpura drone, bansuri phrases on Yaman, distant drum
+    padDrone(buses.ancient, a, b - a, [38, 45, 50], 0.2, 520);
+    const nn = walk(SCL.yaman, 62, -3, 7, 80, 2); let ni = 0; for (let t = a + 1.5; t < b - 1; t += beat * (rnd() < 0.5 ? 3 : 4)) { flute(buses.ancient, t, M2F(nn[ni++ % nn.length]), beat * 2.6, 0.2); if (rnd() < 0.6) flute(buses.ancient, t + beat * 2.4, M2F(nn[ni++ % nn.length]), beat * 1.6, 0.16); }
+    for (let t = a + 4; t < b; t += beat * 4) { frame(buses.ancient, t, 0.22, 100); frame(buses.ancient, t + beat * 2, 0.12, 120); }
+    for (let t = a + 6; t < b; t += 9) bell(buses.ancient, t, M2F(86 + (rnd() * 3 | 0) * 2), 0.1, 6); }
+  { const [, a, b] = EP[2], beat = 60 / 92; // Sultanate: nagara drums, shehnai-like ney, bhairavi
+    for (let t = a; t < b; t += beat * 4) for (const [ty, k] of [['d', 0], ['t', 1], ['t', 1.5], ['d', 2], ['t', 3]]) { if (ty === 'd') frame(buses.sult, t + k * beat, 0.34, 150); else tek(buses.sult, t + k * beat, 0.15, 3400); }
+    const sc = SCL.bhairavi, nn = walk(sc, 62, -2, 7, 60, 3); let ni = 0; for (let t = a + 1; t < b - 2; t += beat * 4) { const L = beat * (rnd() < 0.5 ? 3 : 2); ney(buses.sult, t, M2F(nn[ni++ % nn.length]), L, 0.2); if (rnd() < 0.6) ney(buses.sult, t + L, M2F(nn[ni++ % nn.length]), beat * 1.5, 0.16); }
+    const on = walk(sc, 50, -1, 7, 160, 3); let oi = 0; for (let t = a; t < b; t += beat / 2) { if (rnd() < 0.3) continue; pluck(buses.sult, t, M2F(on[oi++ % on.length]), 0.9, 0.2, 'sawtooth', 4); }
+    padDrone(buses.sult, a, b - a, [38, 45, 50], 0.14, 400); }
+  { const [, a, b] = EP[3]; // Timur: war drums and low strings
+    for (let t = a + 0.5; t < b; t += 1.5) timp(buses.timur, t, 0.55); strings(buses.timur, a, M2F(38), b - a + 1, 0.26, 1.0); strings(buses.timur, a, M2F(39), b - a + 1, 0.2, 1.0); for (let t = a + 2; t < b; t += 3.1) rumble(t, 2.4, 0.26, 150); }
+  { const [, a, b] = EP[4], beat = 60 / 84; // Mughal: sitar, bansuri, teental on tabla, strings
+    for (let t = a; t < b; t += beat * 16) for (let i = 0; i < 16; i++) { const tt = t + i * beat; if (i % 4 === 0 || i === 13 || i === 14) frame(buses.mughal, tt, i === 0 ? 0.34 : 0.2, 110); tek(buses.mughal, tt + beat * 0.5, 0.07, 4200); if (i % 2 === 1) tek(buses.mughal, tt, 0.1, 3000); }
+    const sc = SCL.yaman, mel = walk(sc, 62, -3, 8, 200, 3); let mi = 0; for (let t = a + 2; t < b - 1; t += beat * (rnd() < 0.5 ? 1 : 0.5)) { if (rnd() < 0.28) continue; pluck(buses.mughal, t, M2F(mel[mi++ % mel.length]), 1.0, 0.22, 'sawtooth', 8); }
+    const fl = walk(sc, 74, -2, 5, 60, 2); let fi = 0; for (let t = a + 3; t < b - 2; t += beat * 6) flute(buses.mughal, t, M2F(fl[fi++ % fl.length]), beat * 3.5, 0.15);
+    padDrone(buses.mughal, a, b - a, [38, 45, 50, 54], 0.2, 600); for (let t = a + 1; t < b; t += beat * 8) strings(buses.mughal, t, M2F(50 + sc[(rnd() * 7) | 0]), beat * 7, 0.08, 0.8);
     window.MOTIF = mel.slice(0, 16); }
-  { const [, a, b] = EP[7], beat = 60 / 138, prog = [CH.D, CH.A, CH.D, CH.G, CH.D, CH.A, CH.Em, CH.A]; let i = 0; // golden waltz
-    for (let t = a; t < b; t += beat * 3, i++) { const ch = prog[Math.floor(i / 2) % prog.length]; pluck(buses.golden, t, M2F(ch[0] - 12), 0.5, 0.34, 'triangle', 3); for (const k of [1, 2]) for (const m of ch.slice(1, 4)) pluck(buses.golden, t + k * beat, M2F(m), 0.18, 0.1, 'sawtooth', 4); if (i % 2 === 0) { const nn = walk(SCL.ionian, 62, 0, 7, 3, 3); strings(buses.golden, t, M2F(nn[0] + 12), beat * 5.5, 0.12, 0.25); } }
-    for (let t = a + 1; t < b - 2; t += beat * 6) strings(buses.golden, t, M2F(74 + SCL.ionian[Math.floor(rnd() * 7)]), beat * 4, 0.1, 0.3); }
-  { const [, a, b] = EP[8]; // wars 1920-1944
-    for (let t = a; t < b + 1; t += 0.5) tek(buses.wars, t, 0.05, 6000); strings(buses.wars, a, M2F(38), b - a + 2, 0.22, 1.5); strings(buses.wars, a, M2F(50), b - a + 2, 0.12, 1.5); strings(buses.wars, a + 2, M2F(51), b - a, 0.1, 1.5); const pn = walk(SCL.minor, 62, -3, 3, 8, 2); for (let k = 0; k < 4; k++) piano(buses.wars, a + 0.5 + k * 2.2, M2F(pn[k]), 0.2, 2.2); }
-  { const [, a, b] = EP[9]; // siege
-    for (let t = a + 0.5; t < b; t += 1.7) timp(buses.siege, t, 0.55); strings(buses.siege, a, M2F(38), b - a + 1, 0.28, 1.0); strings(buses.siege, a, M2F(39), b - a + 1, 0.2, 1.0); strings(buses.siege, a, M2F(45), b - a + 1, 0.12, 1.0); for (let t = a + 3; t < b; t += 3.4) rumble(t, 2.5, 0.28, 140); }
-  { const [, a, b] = EP[10]; // socialist
-    const beat = 60 / 100; for (let t = a, i = 0; t < b; t += beat, i++) { kick(buses.soc, t, i % 4 === 0 ? 0.4 : 0.2); if (i % 2 === 1) snare(buses.soc, t, 0.16); tek(buses.soc, t + beat / 2, 0.06, 6500); }
-    for (let t = a; t < b; t += beat * 8) { for (const m of [38, 45]) { const g = ctx.createGain(), l = lp(600); adsr(g, t, 0.3, beat * 7.5, 0.5, 0.14); const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = M2F(m); const lf = ctx.createOscillator(), lg = ctx.createGain(); lf.frequency.value = 0.3; lg.gain.value = 300; lf.connect(lg); lg.connect(l.frequency); lf.start(t); lf.stop(t + beat * 8); o.connect(l); l.connect(g); g.connect(buses.soc); o.start(t); o.stop(t + beat * 8); } const ar = [0, 3, 7, 10, 7, 3]; for (let k = 0; k < 16; k++) pluck(buses.soc, t + k * beat / 2, M2F(62 + ar[k % 6]), 0.35, 0.1, 'square', 3); } }
-  { const [, a, b] = EP[11]; // modern
+  { const [, a, b] = EP[5]; // Nadir Shah: dark
+    for (let t = a + 0.6; t < b; t += 1.4) timp(buses.nadir, t, 0.5); strings(buses.nadir, a, M2F(38), b - a + 1, 0.26, 1.0); strings(buses.nadir, a, M2F(41), b - a + 1, 0.18, 1.0); for (let t = a + 2; t < b; t += 3.3) rumble(t, 2.4, 0.24, 150); }
+  { const [, a, b] = EP[6], beat = 60 / 108; // East India Company: marching drums and brass
+    for (let t = a, i = 0; t < b; t += beat, i++) { if (i % 2 === 0) frame(buses.comp, t, 0.3, 140); else tek(buses.comp, t, 0.14, 3000); if (i % 8 === 0) brass(buses.comp, t, M2F(57), beat * 3, 0.12); }
+    padDrone(buses.comp, a, b - a, [38, 45, 50], 0.16, 500); }
+  { const [, a, b] = EP[7]; // 1857
+    for (let t = a + 0.5; t < b; t += 1.6) timp(buses.reb, t, 0.55); strings(buses.reb, a, M2F(38), b - a + 1, 0.28, 1.0); strings(buses.reb, a, M2F(41), b - a + 1, 0.2, 1.0); strings(buses.reb, a, M2F(45), b - a + 1, 0.12, 1.0); for (let t = a + 3; t < b; t += 3.4) rumble(t, 2.5, 0.28, 140); }
+  { const [, a, b] = EP[8], beat = 60 / 126, prog = [CH.D, CH.A, CH.D, CH.G, CH.D, CH.A, CH.Em, CH.A]; let i = 0; // Raj: waltz, strings, piano
+    for (let t = a; t < b; t += beat * 3, i++) { const ch = prog[Math.floor(i / 2) % prog.length]; pluck(buses.raj, t, M2F(ch[0] - 12), 0.5, 0.34, 'triangle', 3); for (const k of [1, 2]) for (const m of ch.slice(1, 4)) pluck(buses.raj, t + k * beat, M2F(m), 0.18, 0.1, 'sawtooth', 4); if (i % 2 === 0) { const nn = walk(SCL.ionian, 62, 0, 7, 3, 3); strings(buses.raj, t, M2F(nn[0] + 12), beat * 5.5, 0.12, 0.25); } }
+    for (let t = a + 1; t < b - 2; t += beat * 6) strings(buses.raj, t, M2F(74 + SCL.ionian[Math.floor(rnd() * 7)]), beat * 4, 0.1, 0.3); }
+  { const [, a, b] = EP[9]; // independence: hopeful strings and bansuri on Bhupali
+    padDrone(buses.indep, a, b - a, [38, 45, 50, 57], 0.26, 900); const nn = walk(SCL.bhupali, 69, -2, 5, 40, 2); let ni = 0; for (let t = a + 0.8; t < b - 1; t += 1.7) flute(buses.indep, t, M2F(nn[ni++ % nn.length]), 1.5, 0.17);
+    for (const [k, m] of [[0, 50], [0.1, 57], [0.2, 62], [0.3, 66], [3.2, 52], [3.3, 59], [3.4, 64], [3.5, 67]]) strings(buses.indep, a + 0.6 + k, M2F(m), 3.4, 0.1, 0.9); for (let t = a + 2; t < b; t += 2.6) bell(buses.indep, t, M2F(81), 0.12, 6); }
+  { const [, a, b] = EP[10], beat = 60 / 104; // Republic: tabla groove, sitar riff on bhairav
+    for (let t = a; t < b; t += beat * 16) for (let i = 0; i < 16; i++) { const tt = t + i * beat; if (i % 4 === 0 || i === 13) frame(buses.rep, tt, i === 0 ? 0.36 : 0.22, 105); tek(buses.rep, tt + beat * 0.5, 0.08, 4600); if (i % 2 === 1) tek(buses.rep, tt, 0.1, 3200); }
+    const mel = walk(SCL.bhairav, 62, -2, 7, 200, 3); let mi = 0; for (let t = a; t < b; t += beat / 2) { if (rnd() < 0.34) continue; pluck(buses.rep, t, M2F(mel[mi++ % mel.length]), 0.7, 0.2, 'sawtooth', 7); }
+    for (let t = a; t < b; t += beat * 8) for (const m of [38, 45]) { const g = ctx.createGain(), l = lp(600); adsr(g, t, 0.3, beat * 7.5, 0.5, 0.14); const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = M2F(m); o.connect(l); l.connect(g); g.connect(buses.rep); o.start(t); o.stop(t + beat * 8); } }
+  { const [, a, b] = EP[11]; // modern: pulse, arps, motif returns
     const beat = 60 / 110; for (let t = a, i = 0; t < b; t += beat, i++) { kick(buses.modern, t, 0.34); tek(buses.modern, t + beat / 2, 0.07, 7500); if (i % 2 === 1) snare(buses.modern, t, 0.1); pluck(buses.modern, t, M2F(38 + [0, 0, 3, 5][i % 4]), 0.3, 0.26, 'sawtooth', 2); }
     const ar = [0, 4, 7, 12, 7, 4, 9, 4]; for (let t = a, i = 0; t < b; t += beat / 2, i++) pluck(buses.modern, t, M2F(62 + ar[i % 8] + (Math.floor(i / 16) % 2 ? 5 : 0)), 0.4, 0.09, 'triangle', 4);
-    padDrone(buses.modern, a, b - a, [38, 45, 50, 54, 57], 0.3, 1400); const mt = window.MOTIF || [62, 64, 65, 68, 69]; for (const [t0, g] of [[339, 0.24], [352, 0.2], [361, 0.26]]) mt.slice(0, 8).forEach((m, k) => cimbalom(buses.modern, t0 + k * 0.62, M2F(m), 0.5, g)); }
+    padDrone(buses.modern, a, b - a, [38, 45, 50, 54, 57], 0.3, 1400); const mt = window.MOTIF || [62, 64, 65, 68, 69]; for (const [t0, g] of [[tS(2002) + 3, 0.2], [tS(2023) + 0.4, 0.2], [tS(2025) + 3, 0.26]]) mt.slice(0, 8).forEach((m, k) => pluck(buses.modern, t0 + k * 0.62, M2F(m + 12), 0.9, g, 'sawtooth', 8)); }
   // ---- event sfx
-  const key = evs.filter(e => e.key);
-  for (const e of evs) { const t0 = e.t0; chime(t0 + 0.15, M2F(81 + (Math.floor(e.y) % 4) * 2), e.key ? 0.3 : 0.17); if (e.age) { for (const [k, m] of [[0, 62], [0.28, 69], [0.56, 74]]) brass(sfxMaster, t0 + 0.2 + k, M2F(m), 1.2, 0.22); LOUD.push([t0 + 0.7, 'age fanfare ' + e.age]); } }
+  for (const e of evs) { const t0 = e.t0; chime(t0 + 0.15, M2F(81 + (Math.floor(Math.abs(e.y)) % 4) * 2), e.key ? 0.3 : 0.17); if (e.age) { for (const [k, m] of [[0, 62], [0.28, 69], [0.56, 74]]) brass(sfxMaster, t0 + 0.2 + k, M2F(m), 1.2, 0.22); LOUD.push([t0 + 0.7, 'age fanfare ' + e.age]); } }
   for (const s of T.segs.filter(x => x.k === 'gap')) whoosh(s.t0, 1.2, 0.07, true);
   const ev = (y) => evAt(y);
-  { const e = ev(89); clink(e.t0 + 1.2); clink(e.t0 + 1.9); clink(e.t0 + 2.6); const e2 = ev(896); hoofs(e2.t0 + 0.8, 4.5, 0.22); const f1 = ev(1241); rumble(f1.t0, 8, 0.28, 180); crackle(f1.t0 + 1, 7, 0.1); boom(f1.t0 + 0.5, 0.25, 2, 'Mongol fire'); const f2 = ev(1526); rumble(f2.t0, 4.8, 0.2, 180); crackle(f2.t0 + 0.8, 4, 0.08);
-    const s = ev(1686); rumble(s.t0, 8, 0.3, 200); crackle(s.t0 + 1, 7, 0.1); const fl = ev(1838); water(fl.t0 + 0.2, 7.5, 0.34); rumble(fl.t0 + 0.4, 6, 0.14, 120);
-    const r48 = ev(1848); crowd(r48.t0 + 0.4, 4, 0.12); const cb = ev(1849); bell(sfxMaster, cb.t0 + 0.6, 523, 0.18, 5); bell(sfxMaster, cb.t0 + 1.2, 659, 0.15, 5); crowd(cb.t0 + 1, 5, 0.1);
-    const m73 = ev(1873); for (const [k, f] of [[0.3, 392], [0.9, 494], [1.5, 587], [2.1, 392]]) bell(sfxMaster, m73.t0 + k, f, 0.22, 5);
-    const mil = ev(1896); tramBell(mil.t0 + 0.8); tramBell(mil.t0 + 4.4); for (let k = 0; k < 7; k++) firework(mil.t0 + 1.2 + k * 0.95); crowd(mil.t0 + 0.5, 7, 0.1);
-    const w = ev(1944.9); for (let k = 0; k < 5; k++) boom(w.t0 + 0.15 + k * 0.17, 0.85, 3.4, 'bridge explosion ' + (k + 1)); rumble(w.t0, 11, 0.5, 130); for (let k = 0; k < 7; k++) boom(w.t0 + 2.2 + k * 1.15 + rnd() * 0.3, 0.32, 1.8, 'distant shell'); crackle(w.t0 + 1, 9, 0.08);
-    const g = ev(1950); whoosh(g.t0 + 0.2, 2.2, 0.16, true); const u = ev(1956); crowd(u.t0 + 0.3, 8, 0.2); const crashT = u.t0 + u.t1 * 0 + 8.2 * 0.5; boom(crashT, 0.7, 2.2, 'statue crash'); clink(crashT + 0.1); clink(crashT + 0.25); rumble(u.t0 + 4.6, 3, 0.3, 200);
-    const n89 = ev(1989); for (const [k, f] of [[0.3, 392], [0.8, 440], [1.3, 523], [1.9, 659], [2.5, 784]]) bell(sfxMaster, n89.t0 + k, f, 0.2, 5); crowd(n89.t0 + 1, 6, 0.14); const fin = ev(2025); for (const [k, m] of [[0.4, 62], [0.6, 69], [0.8, 74], [1.0, 81]]) bell(sfxMaster, fin.t0 + k, M2F(m), 0.2, 8); }
+  { const e1 = ev(1060); clink(e1.t0 + 1.2); clink(e1.t0 + 1.9); clink(e1.t0 + 2.6); const e27 = ev(1327); crowd(e27.t0 + 0.5, 6, 0.1);
+    const tm = ev(1398); rumble(tm.t0, 8, 0.28, 180); crackle(tm.t0 + 1, 7, 0.1); boom(tm.t0 + 0.5, 0.25, 2, 'Timur fire'); const nd = ev(1739); rumble(nd.t0, 8, 0.26, 180); crackle(nd.t0 + 1, 7, 0.1); boom(nd.t0 + 0.5, 0.25, 2, 'Nadir Shah fire');
+    const rb = ev(1857); rumble(rb.t0, 11, 0.4, 150); crackle(rb.t0 + 1, 9, 0.08); for (let k = 0; k < 6; k++) boom(rb.t0 + 0.5 + k * 0.9 + rnd() * 0.2, 0.4, 1.8, 'artillery ' + (k + 1)); boom(rb.t0 + 6.2, 0.95, 3.4, 'Kashmiri Gate explosion'); rumble(rb.t0 + 6.2, 4, 0.4, 130);
+    const ib = ev(1866); hornShip(ib.t0 + 1.0, 0.12, 150); for (let k = 0; k < 8; k++) { tek(sfxMaster, ib.t0 + 1.6 + k * 0.35, 0.1, 700); }
+    const du = ev(1911); crowd(du.t0 + 0.5, 7, 0.1); const nd2 = ev(1931); for (const [k, f] of [[0.3, 392], [0.9, 494], [1.5, 587], [2.1, 392]]) bell(sfxMaster, nd2.t0 + k, f, 0.22, 5);
+    const f47 = ev(1947); crowd(f47.t0 + 0.3, 9, 0.16); for (const [k, f] of [[1.0, 392], [1.6, 440], [2.2, 523], [2.8, 659], [3.4, 784]]) bell(sfxMaster, f47.t0 + k, f, 0.2, 5);
+    const rp = ev(1950); whoosh(rp.t0 + 0.2, 2.2, 0.16, true); const mt = ev(2002); whoosh(mt.t0 + 0.6, 3.6, 0.2, true); for (const k of [1.0, 1.7, 2.4]) chime(mt.t0 + k, M2F(86), 0.16);
+    const cg = ev(2010); for (let k = 0; k < 7; k++) firework(cg.t0 + 0.8 + k * 0.5); crowd(cg.t0 + 0.4, 4, 0.12); const fl = ev(2023); water(fl.t0 + 0.2, 4.6, 0.34); rumble(fl.t0 + 0.4, 4, 0.14, 120);
+    const fin = ev(2025); for (const [k, m] of [[0.4, 62], [0.6, 69], [0.8, 74], [1.0, 81]]) bell(sfxMaster, fin.t0 + k, M2F(m), 0.2, 8); }
   for (const a of (T.acts || [])) {
     for (const s of a.snd) { const [k, off, p1, p2] = s, t = a.t0 + off; const pan = (rnd() - 0.5) * 1.2;
       if (k === 'horn') { brass(sfxMaster, t, M2F(57), 1.4, 0.1); brass(sfxMaster, t + 0.02, M2F(64), 1.4, 0.07); }
@@ -147,26 +152,23 @@ async function build(T) {
       else if (k === 'ship') { hornShip(t, 0.16, 117); }
       else if (k === 'brass') { for (const [o2, m] of [[0, 62], [0.5, 66], [1.0, 69], [1.6, 74]]) brass(sfxMaster, t + o2, M2F(m), 0.9, 0.12); frame(sfxMaster, t, 0.25, 90); frame(sfxMaster, t + 0.5, 0.2, 90); }
       else if (k === 'clop') clop(t, p1); else if (k === 'tank') tankRoll(t, p1);
+      else if (k === 'fireworks') { for (let j = 0; j < 6; j++) firework(t + j * 0.7); }
       else if (k === 'siren') siren(t, p2 || 6.5);
-      else if (k === 'flak') { const n = Math.floor((p2 || 5) * 7); for (let i = 0; i < n; i++) flakPop(t + rnd() * (p2 || 5), (rnd() - 0.5) * 1.6); }
     }
-    if (a.shells) for (let i = 0; i < a.shells.n; i++) { const ft = a.shells.t0 + i * a.shells.gap; boom(ft, 0.38, 1.6, 'cannon 1686'); boom(ft + 0.95, 0.3, 1.5, 'shell impact 1686'); }
+    if (a.shells) for (let i = 0; i < a.shells.n; i++) { const ft = a.shells.t0 + i * a.shells.gap; boom(ft, 0.38, 1.6, 'cannon 1857'); boom(ft + 0.95, 0.3, 1.5, 'shell impact 1857'); }
     if (a.name === 'finale') for (let j = 0; j < 8; j++) firework(a.t0 + 2.0 + j * 0.8);
-    if (a.jets !== null && a.jets !== undefined) jet(a.jets - 0.4, 5.2, 0.3, -0.9, 0.9, 'jet flyover (finale)');
+    if (a.jets !== null && a.jets !== undefined) jet(a.jets - 0.4, 5.2, 0.3, -0.9, 0.9, 'jet flyover (' + a.name + ')');
   }
-  for (const b of (T.raidPlanes || [])) bomberDrone(b.t0, b.dur, -0.9, 0.9);
-  for (const b of (T.raidBombs || [])) { bombWhistle(b.drop, b.pan); boom(b.hit, 0.5, 2.0, 'air-raid bomb'); }
   for (const f of (T.flights || [])) { if (f.type === 'jet') jet(f.t0, f.t1 - f.t0, 0.16, f.dir > 0 ? -0.9 : 0.9, f.dir > 0 ? 0.9 : -0.9, 'jet flyover'); else if (f.type === 'airliner') jet(f.t0, f.t1 - f.t0, 0.08, f.dir > 0 ? -0.9 : 0.9, f.dir > 0 ? 0.9 : -0.9, 'airliner'); else prop(f.t0, f.t1 - f.t0, f.type === 'biplane' ? 0.16 : 0.2, f.dir > 0 ? -0.9 : 0.9, f.dir > 0 ? 0.9 : -0.9, f.type === 'biplane' ? 130 : 95); }
-  // ambient life: birds, ship whistles, traffic, honks, tram bells
-  birdsong(11, 56, 0.035); birdsong(86, 40, 0.025); birdsong(330, 28, 0.03);
-  for (const tt of [205, 218, 236, 252, 268, 281]) hornShip(tt, 0.1, 130); for (const tt of [336, 347, 358]) hornShip(tt, 0.12, 100);
-  traffic(255, 36, 0.04); traffic(305, 66, 0.07); for (const tt of [262, 271, 279, 312, 322, 333, 341, 349, 357]) carHorn(tt, 0.05); for (const tt of [259, 266, 283, 316]) tramBell(tt);
+  // ambient life: birds, traffic, honks, tram bells
+  birdsong(11, 44, 0.035); birdsong(tS(1526), 40, 0.025); birdsong(tS(2023), 20, 0.03);
+  traffic(tS(1947), 40, 0.04); traffic(tS(1982), T.total - tS(1982) - 6, 0.07); for (const tt of [tS(1950) + 2, tS(1962) + 1.5, tS(1982) + 1, tS(1986) + 1.5, tS(2002) + 5, tS(2005) + 1.5, tS(2010) + 5, tS(2023) + 1]) carHorn(tt, 0.05); for (const tt of [tS(1911) + 2, tS(1931) + 3, tS(1947) + 7]) tramBell(tt);
   const split = T.segs.find(s => s.k === 'split'), end = T.segs.find(s => s.k === 'end'); whoosh(split.t0 + 0.2, 4.5, 0.13, true); for (const [k, m] of [[0, 50], [0, 57], [0, 62], [0, 66], [0, 74]]) strings(sfxMaster, end.t0, M2F(m), 3.5, 0.1, 0.6); bell(sfxMaster, end.t0 + 0.2, M2F(86), 0.22, 7);
   S('rendering…'); const buf = await ctx.startRendering();
   let pk = 0, ss = 0; for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a; ss += d[i] * d[i]; } } const gain = 0.89 / pk; for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] *= gain; }
   return { buf, peak: pk, rms: Math.sqrt(ss / (2 * buf.length)) * gain };
 }
 function wav(buf) { const n = buf.length, ab = new ArrayBuffer(44 + n * 4), v = new DataView(ab), w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }; w(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true); v.setUint32(24, SR, true); v.setUint32(28, SR * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 4, true); const L = buf.getChannelData(0), R = buf.getChannelData(1); let o = 44; for (let i = 0; i < n; i++) { v.setInt16(o, Math.max(-1, Math.min(1, L[i])) * 32767, true); v.setInt16(o + 2, Math.max(-1, Math.min(1, R[i])) * 32767, true); o += 4; } return ab; }
-window.makeAudio = async () => { S('building audio…'); const T = await (await fetch('out/timeline_bp.json')).json(); const r = await build(T); window.AUDIO = r.buf; const resp = await fetch('/save/budapest-audio.wav', { method: 'PUT', body: wav(r.buf) }); await fetch('/save/budapest-loud.json', { method: 'PUT', body: JSON.stringify(LOUD.sort((a, b) => a[0] - b[0])) }); S('audio ready: ' + r.buf.duration.toFixed(1) + ' s, rms ' + r.rms.toFixed(3) + ', peak(before norm) ' + r.peak.toFixed(2) + ', WAV saved ' + resp.status); return { dur: r.buf.duration, rms: r.rms, peak: r.peak, loud: LOUD.length }; };
+window.makeAudio = async () => { S('building audio…'); const T = await (await fetch('out/timeline_dl.json')).json(); const r = await build(T); window.AUDIO = r.buf; const resp = await fetch('/save/delhi-audio.wav', { method: 'PUT', body: wav(r.buf) }); await fetch('/save/delhi-loud.json', { method: 'PUT', body: JSON.stringify(LOUD.sort((a, b) => a[0] - b[0])) }); S('audio ready: ' + r.buf.duration.toFixed(1) + ' s, rms ' + r.rms.toFixed(3) + ', peak(before norm) ' + r.peak.toFixed(2) + ', WAV saved ' + resp.status); return { dur: r.buf.duration, rms: r.rms, peak: r.peak, loud: LOUD.length }; };
 window.muxVideo = async (videoUrl, outName) => { const MB = window.MB; S('muxing…'); const blob = await (await fetch(videoUrl)).blob(); const input = new MB.Input({ source: new MB.BlobSource(blob), formats: MB.ALL_FORMATS }); const vt = await input.getPrimaryVideoTrack(), cfg = await vt.getDecoderConfig(); const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new MB.BufferTarget() }); const vs = new MB.EncodedVideoPacketSource('avc'); output.addVideoTrack(vs, { frameRate: 30 }); const as = new MB.AudioBufferSource({ codec: 'aac', bitrate: 192000 }); output.addAudioTrack(as); await output.start(); const sink = new MB.EncodedPacketSink(vt); let first = true, n = 0; for await (const pkt of sink.packets()) { await vs.add(pkt, first ? { decoderConfig: cfg } : undefined); first = false; if (++n % 600 === 0) S('muxing video packets ' + n); } await as.add(window.AUDIO); await output.finalize(); const buf = output.target.buffer, r = await fetch('/save/' + outName, { method: 'PUT', body: buf }); S('muxed ' + outName + ' ' + Math.round(buf.byteLength / 1e6) + ' MB, packets ' + n + ', status ' + r.status); return { MB: buf.byteLength / 1e6, packets: n }; };
 </script></body></html>
