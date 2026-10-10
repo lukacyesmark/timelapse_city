@@ -14,15 +14,15 @@ Praktický postup od zadání po nahrání na YouTube. Doplňuje `CLAUDE.md` (st
 
 **Doporučení:** v aplikaci Claude → Code → **Local**, pracovní složka `~/Documents/casosber/mesta` (klon repozitáře `timelapse_city`). Cloud jen na úpravy kódu a náhledy.
 
-## 2. Zadání (co napsat)
-```
-Vyrob časosběr města <MĚSTO> (od <začátek> po dnešek), 6–7 minut, stejný styl jako Budapešť/Dillí.
-Hook: <rok + událost>. Open loop: „Wait for <rok>“ (<památka>).
-Nejdřív mi napiš odhad času a co ti musím potvrdit, pak udělej celé video a ulož ho do této složky.
-```
-Volitelně přilož 30–35 událostí (rok, titulek, jedna věta anglicky, které jsou zlomové). Jinak je Claude navrhne a ověří.
+## 2. Zadání a první kolo
+Stačí napsat: **„Vyrob časosběr města <MĚSTO>.“** (volitelně období, hook, vlastní události).
 
-Claude se má zeptat jen na 4 věci (`CLAUDE.md` kap. 9): město a období, open loop, délku, povolení stahovat data. Zbytek rozhodne sám a uvede v souhrnu.
+Claude pak **nic nerenderuje** a nejdřív pošle:
+1. **návrh událostí** (tabulka rok · titulek EN · věta EN · zlomová · scéna), počet podle historie města a státu (~30 až 60);
+2. **očekávanou délku** videa, pružně 6–10 min (zhruba 11 s na událost + 22 s intro a outro);
+3. odhad času a otázky (hook, open loop, stahování dat).
+
+Projdete seznam, upravíte, schválíte. Pak Claude udělá zbytek sám a hotové video uloží do **`~/Documents/casosber/mesta/videa/<mesto>-final.mp4`**.
 
 ## 3. Postup (fáze)
 1. **Data** – nová složka `zdroje-<mesto>/` (kopie posledního města).
@@ -30,7 +30,8 @@ Claude se má zeptat jen na 4 věci (`CLAUDE.md` kap. 9): město a období, open
    - Řeka, mosty, silnice: Overpass/OSM (`fetch_osm.py` + prep). **Když OSM nejde** → „varianta B“ jako u Dillí: `prep_synth.py` (řeka z ručně zadané střednice, mosty a hlavní tepny ručně, ulice generované). V popisu videa pak neuvádět © OSM.
 2. **Obsah** – přepsat konstanty (`CLAUDE.md` kap. 6.3): `LAT0/LON0`, `NUC` (jádra a růst), `PARKS`, `DESTR`, památky (`addLandmarks`, sprity v `spr.js`), hradby, `EVENTS`, `POPT`, `RULERS` (název + podtitul + barvy vlajky), `CITY`, `BRX`, scénky `buildActs`, hudební epochy v `audio_*.html`.
 3. **Náhledy** – kontaktní archy 4–6 snímků (`tools/shot.js`, `tools/dbg.js`, `tools/sheet.py`). Opravit, co je špatně, teprve pak renderovat.
-4. **Render obrazu** – `python3 server2.py` → Chrome `http://localhost:8766/run.html` → konzole (⌘⌥J):
+4. **Render automaticky (doporučeno):** v jednom terminálu `python3 server2.py`, ve druhém `npm i -D playwright` (jednou) a `node tools/render_local.js audio_<xx>.html <mesto>`. Otevře se okno Chrome (nechat viditelné), vyrenderuje obraz, zvuk, spojí je a zkopíruje do `~/Documents/casosber/mesta/videa/`.
+   **Ručně:** `python3 server2.py` → Chrome `http://localhost:8766/run.html` → konzole (⌘⌥J):
    ```js
    await exportTimeline(); await startEncode()
    ```

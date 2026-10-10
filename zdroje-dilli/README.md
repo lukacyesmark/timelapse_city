@@ -4,6 +4,9 @@
 Veškerý text ve videu je anglicky. Délka ~6:05 (10 966 snímků při 30 fps).
 
 ## Spuštění (lokálně, Chrome/Edge/Safari desktop)
+**Automaticky:** `python3 server2.py` a ve druhém terminálu `npm i -D playwright && node tools/render_local.js audio_dl.html delhi` → `~/Documents/casosber/mesta/videa/delhi-final.mp4` (okno Chrome nechat viditelné).
+
+**Ručně:**
 ```bash
 cd zdroje-dilli && mkdir -p out && python3 server2.py      # http://localhost:8766
 ```
